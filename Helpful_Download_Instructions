@@ -1,0 +1,74 @@
+Instructions to download and run FALCON on a fresh Google Cloud Instance:
+
+Step1: Install the basics
+sudo apt install build-essential
+sudo apt update
+sudo apt upgrade 
+
+Step2: Install the necessary tools for FALCON and FALCON-Unzip
+sudo apt install samtools
+sudo apt install libghc-zlib-dev
+sudo apt install pip
+sudo pip install virtualenv
+sudo pip install pysam
+
+*   Steps 3 and 4 can be found in more detail at http://pb-falcon.readthedocs.io/en/latest/quick_start.html and also at http://pb-falcon.readthedocs.io/en/latest/tutorial.html   *
+
+Step3: Install FALCON
+wget http://pb-falcon.readthedocs.io/en/latest/_downloads/install_unzip.sh
+bash -ex install_unzip.sh /path/to/your/install/dir
+
+Step4: Download Ecoli Dataset
+wget https://downloads.pacbcloud.com/public/data/git-sym/ecoli.m140913_050931_42139_c100713652400000001823152404301535_s1_p0.subreads.tar.gz
+tar -xvzf ecoli.m140913_050931_42139_c100713652400000001823152404301535_s1_p0.subreads.tar.gz
+
+Step5: Create the FOFN and download sample config file
+/my/path/to/data/ecoli.1.subreads.fasta
+/my/path/to/data/ecoli.2.subreads.fasta
+/my/path/to/data/ecoli.3.subreads.fasta
+
+wget http://pb-falcon.readthedocs.io/en/latest/_downloads/fc_run_ecoli_local.cfg
+
+At this point it is suggested to store all necessary scripts, environments, and config files in a directory (I call mine falconEssentials, which you will see in the script example below). Similarly, I suggest storing all data files in a directory outside the run directoy so that you will not have to change the FOFN everytime you start attempt a new run.
+
+
+Step6: Create a script for running FALCON on Ecoli DataSet
+Suggested script:
+
+echo "Run on `date`." >> time.log
+# Start Time
+SECONDS=0
+source path/to/falconEssentials/fc_env/bin/activate
+source path/to/falconEssentials/src/FALCON-integrate/default-env.sh
+cd path/to/NAME_OF_RUN_DIRECTORY
+fc_run fc_run_ecoli_local.cfg
+echo "$((${SECONDS}/3600)) hours $((${SECONDS}%3600/60)) minutes and $((${SECONDS}%60)) seconds elapsed." >> time.log 
+
+
+This script will source the necessary files, create a file that holds the length of time elapsed during the run, and will begin the FALCON run.
+
+Step7: In order to run on legitimate, non-provided data, you will need to upload it from some outside source and put it into the directory in which you are storing the rest of your data files (which may just be the Ecoli at this point). Then you'll need a new FOFN that has the names of/path to your new data files. You will then need to copy the configuration file, the new FOFN file, and the run script from step 6 to a new run directory before starting the script.
+
+
+GENERAL RECOMMENDATIONS:
+
+As recommended above, I suggest storing data files in some central folder rather than moving them for every run. In order to add your own data to run on FALCON, I recommend installing gdrive for easy file upload/download. I also recommend installing tmux for creating a separate shell to run FALCON, as FALCON runs can take quite a bit of time (several hours).
+
+
+FALCON-UNZIP STEPS
+
+Step1: Ensure that you have completed a FALCON run with no errors and that all files from the run are in the directory that you ran FALCON in. 
+
+Step2: Download FALCON_unzip from github into your falconEssentials folder (or any equivalent you've set up).
+git clone https://github.com/PacificBiosciences/FALCON_unzip.git
+
+Once you've got the directories downloaded, run setup.py by using the following commands:
+./setup.py build
+sudo ./setup.py install
+
+Step3: There should be several new files in your falconEssentials/FALCON-unzip directory. The ones you'll need in particular are located in falconEssentials/FALCON-unzip/examples. Locate the fc_unzip.py and fc_unzip.cfg files and copy those to the working directory in which you've already run FALCON. 
+
+Step4: Use chmod u+x fc_unzip.py to make the file executable, then sinply run ./fc_unzip.py fc_unzip.cfg. It is recommended to run this in a tmux shell.
+
+
+Following these steps should give you a successful FALCON+FALCON-unzip run. Depending on the data you're trying to run through FALCON, you'll need to optimize the configuration files (for example, running FALCON with 10000 reads on our data resulted in no errors, but running it on the same data with a length cutoff of 5000 reads caused us to run out of memory before completion of the run). There are some configuration files readily available here: http://pb-falcon.readthedocs.io/en/latest/parameters.html or you could tinker with the sample file to your liking.
